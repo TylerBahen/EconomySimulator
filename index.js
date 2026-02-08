@@ -150,7 +150,8 @@ function botBuy(){
 function botRequest(){
   if(Math.floor(Math.random()*15*Math.ceil((users.length/5)/2))==0){
     var item = items[Math.floor(Math.random()*items.length)]
-    var quantity = Math.ceil(Math.random()*10)
+    var mult = 10**Math.ceil(Math.random()*2)
+    var quantity = Math.ceil(Math.random()*mult)
     buying.push({type:item,quantity:quantity,price:Math.floor((marketPrices[item]*0.9)*quantity),requestername:genericName()})
   }
 }
