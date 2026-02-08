@@ -229,7 +229,7 @@ io.on('connection',function(client){
     client.name = info.cname
     client.color = info.ccolor
     client.type = info.ctype
-    callback(true)//client.id,tinycolor(client.color).isLight())
+    callback(client.id,true)//client.id,tinycolor(client.color).isLight())
     info.id = client.id
     users.push({name:client.name,color:client.color,id:client.id,type:client.type})
     botAdapt(client.type,'connect')
@@ -257,7 +257,7 @@ io.on('connection',function(client){
     selling.forEach((pointer,index) => {
       if(JSON.stringify(item)==JSON.stringify(pointer)&&!found){
         try{
-        io.to(item.ownerid).emit('sold',item)
+          io.to(item.ownerid).emit('sold',item)
         }
         catch(e){
           console.log(e)
