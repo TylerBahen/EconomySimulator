@@ -1,0 +1,20 @@
+May 23, 2022:
+  Created Alpha
+
+May 24, 2022:
+  Created server framework
+
+May 25-27, 2022:
+  Added Buy/Sell market
+
+June, 2022:
+  Added Lumber, Mining, and Oil businesses
+  Added employees
+
+December, 2022:
+  Added subsidary businesses
+
+Jan, 2023:
+  Added Refining and Fabrication businesses
+  Added market bot adapting
+  

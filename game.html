@@ -1,0 +1,1159 @@
+<html>
+  <head>
+    <title>Economy Simulator</title>
+    <style>
+      body {
+        overflow:hidden;
+      }
+      div {
+        overflow:auto;
+      }
+      .bar {
+        width:100%;
+        margin:0px;
+        padding:0px;
+        background-color:gainsboro;
+        overflow:hidden;
+      }
+      #tabs {
+        position:absolute;
+        top:64px;
+        left:0px;
+        right:0px;
+        bottom:0px;
+        border-style:groove;
+        animation-name:fadein;
+        animation-duration:0.5s;
+        animation-delay:2s;
+        animation-fill-mode:both;
+        border-width:2px 1px 1px 1px;
+        overflow:hidden;
+      }
+      .tab {
+        background-color:whitesmoke;
+        border-style:solid;
+        border-color:darkgray;
+        border-width:1px;
+        height:100%;
+        overflow:auto;
+      }
+      .tabbing {
+        padding-left:2em;
+        padding-right:2em;
+        border-style:none;
+        background-color:gainsboro;
+        margin:0px;
+        font-size:18px;
+        font-family: serif;
+      }
+      .tabbing:hover{
+        background-color:darkgray;
+      }
+      .businessbox {
+        border-style: solid;
+        border-width: 3px;
+      }
+      .numput{
+        width: 4em;
+      }
+      #head {
+        top:0%;
+        margin-top:0%;
+        padding-top:0%;
+        margin-bottom:0%;
+        padding-bottom:0%;
+        overflow:hidden;
+        animation-name:slide;
+        animation-duration:1s;
+        animation-delay:1s;
+        animation-fill-mode: both;
+      }
+      #money {
+        color:green;
+        position:absolute;
+        top:17px;
+        left:0px;
+        animation-name:fadein;
+        animation-duration:0.5s;
+        animation-delay:2s;
+        animation-fill-mode:both;
+      }
+      #inputdiv {
+        position: absolute;
+        border-style:solid;
+        background-color:white;
+        border-width:2px;
+      }
+      #inputdivheader {
+        border-style:outset;
+        border-color:gray;
+        cursor:move;
+      }
+      #selling {
+        width:50%;
+        float:left;
+      }
+      #buying {
+        width:50%;
+        float:right;
+      }
+      #whitespace {
+        height:10%;
+        width:100%;
+        float:bottom;
+      }
+      #Market {
+        overflow:scroll;
+      }
+      @keyframes slide{
+        from {
+          position:absolute;
+          right:100%;
+          left:-100%;
+        }
+        to {
+          position:absolute;
+          right:5%;
+          left:0%;
+        }
+      }
+      @keyframes fadein{
+        from {
+          opacity:0;
+        }
+        to {
+          opacity:1;
+        }
+      }
+      #employeeManager {
+        top:10%;
+        left:25%;
+        right:25%;
+        bottom:10%;
+        position:absolute;
+        background-color:whitesmoke;
+        border-style:double;
+        display:none;
+      }
+      .employeeDiv {
+        border-style:solid;
+        border-width:1px;
+      }
+      .close {
+        cursor: pointer;
+        position: fixed;
+        top: 10%;
+        right: 25%;
+        display:block;
+        color:red;
+        border-style:outset;
+      }
+      .close:hover {
+        background: #bbb;
+        color:white;
+        border-style:inset;
+      }
+
+      .redButton {
+        cursor: pointer;
+        color:red;
+        border-style:outset;
+      }
+      .redButton:hover {
+        background:red;
+        color:white;
+        border-style:inset;
+      }
+
+      .greenButton {
+        cursor: pointer;
+        color:green;
+        border-style:outset;
+      }
+      .greenButton:hover {
+        background:green;
+        color:white;
+        border-style:inset;
+      }
+
+      .box {
+        border-style:solid;
+        border-width:1px;
+      }
+    </style>
+  </head>
+  <body onload='start()'>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      //Framework Stuff
+      var socket = io()
+      var id
+      const urlParams = new URLSearchParams(window.location.search);
+      const entries = urlParams.entries();
+      const quer = {};
+      for (entry of entries) {
+        quer[entry[0]] = entry[1];
+      }
+      var company = {name:quer.cname,color:quer.ccolor,type:quer.ctype}
+      socket.on('ioconnect',function(){
+        socket.emit('companyInfo',quer,function(newID,isLight){
+          id = newID
+          company.id = newID
+          const head = document.getElementById('head')
+          head.style.backgroundColor = company.color
+          if(!isLight){
+            head.style.color = 'white'
+          }
+          head.innerHTML = company.name
+        })
+      })
+      function openTab(tabName) {
+        var i;
+        var x = document.getElementsByClassName("tab");
+        for (i = 0; i < x.length; i++) {
+          x[i].style.display = "none";
+        }
+        document.getElementById(tabName).style.display = "block";
+        cancelBusiness()
+      }
+      window.onbeforeunload = closingCode;
+        function closingCode(){
+         alert('closing')
+      }
+
+
+
+
+
+      
+      //Game Stuff
+      var money = 20000
+      var inventory = {Wood:0,Stone:0,Steel:0,Copper:0,Silicon:0,Oil:0,Coal:0,Quartz:0,Iron:0}
+      var fabrications = []
+      var employeesList = []
+      var businesses = []
+      var loans = []
+      var sellinglist = []
+      var buyinglist = []
+
+      
+      
+      function tick(){
+        updateNumbers()
+        if(document.getElementById('Market').style.display!='none'){
+          updateMarket()
+        }
+        updateBusinesses()
+        setTimeout(tick,100)
+      }
+      function tickMin(){
+        setTimeout(tickMin,60000)
+      }
+
+      function start(){
+        try{
+        newBusiness(quer.ctype,quer.cname)
+        tick()
+        }
+        catch(e){
+          alert(e)
+        }
+      }
+
+      function updateNumbers(){
+        document.getElementById('money').innerHTML = '$'+money
+        var inventoryString = ''
+        for (const [item, amount] of Object.entries(inventory)) {
+          inventoryString+='<p>x'+amount+' '+item+' <button onclick="sell(`'+item+'`)">Sell</button><button onclick="request(`'+item+'`)">Buy</button></p>'
+        }
+        if(inventoryString!=document.getElementById('inventorylist').innerHTML){
+          document.getElementById('inventorylist').innerHTML = inventoryString
+        }
+      }
+      function updateMarket(){
+        socket.emit('getMarket',function(selling,buying){
+          sellinglist = selling
+          var newSelling = '<h3>Selling</h3>'
+          selling.forEach((item,index) => {
+            newSelling += '<p><button onclick="buy('+index+')">x'+item.quantity+' '+item.type+' : $'+item.price+' ('+item.ownername+')</button></p>'
+          })
+          if(document.getElementById('selling').innerHTML!=newSelling){
+            document.getElementById('selling').innerHTML = newSelling
+          }
+          buyinglist = buying
+          var newBuying = '<h3>Buying</h3>'
+          buying.forEach((item,index) => {
+            newBuying += '<p><button onclick="fulfill('+index+')">x'+item.quantity+' '+item.type+' for $'+item.price+' ('+item.requestername+')</button></p>'
+          })
+          if(document.getElementById('buying').innerHTML!=newBuying){
+            document.getElementById('buying').innerHTML = newBuying
+          }
+        })
+      }
+      
+      function updateBusinesses(){
+        businesses.forEach((business,index) => {
+          var div = document.getElementById('business'+index)
+          switch (business.type) {
+            case 'Lumber':
+              var forestsum = ''
+              business.forests.forEach((forest,forestdex) => {
+                var workMult = 0
+                forest.employees.forEach((employee) => {
+                  workMult+=(employee.speed/forest.employees.length)
+                  if(employee.payday<=0){
+                    employee.payday=500
+                    money-=employee.wage
+                    employee.xp.Lumber++
+                  }
+                  employee.payday--
+                })
+                workMult = (forest.employees.length/20)*(forest.employees.length/20)*workMult
+                var harvestingPwr = Math.ceil(workMult*10)
+                var growingNum = 0
+                var treeNum = 0
+                var harvestingNum = 0
+                forest.trees.forEach((tree,treedex) => {
+                  if(tree<100){
+                    forest.trees[treedex] = tree+Math.floor(Math.random()*2)
+                    growingNum++
+                  }else if(tree>=100){
+                    if(harvestingPwr>0){
+                      forest.trees[treedex] = tree+1
+                      harvestingPwr--
+                    }
+                    if(tree>=200){
+                      forest.trees[treedex] = 0
+                      inventory.Wood = inventory.Wood+1
+                    }else{
+                      treeNum++
+                    }
+                  }
+                  if(tree>100&&tree<200){
+                    harvestingNum++
+                  }
+                })
+                forestsum+=('Forest #'+(forestdex+1)+' Trees:'+treeNum+' Trees Harvesting:'+harvestingNum+' Trees Growing:'+growingNum+'<br>')
+                if(forest.trees.length<60){
+                  forestsum+=' <button onclick="plantTree('+index+','+forestdex+')">Plant Tree : $100</button>'
+                }
+              })
+              if(document.getElementById('forests'+index).innerHTML != forestsum){
+              document.getElementById('forests'+index).innerHTML = forestsum
+              }
+              break
+            case 'Mine':
+              var quarrysum = ''
+              business.quarries.forEach((quarry,quarrydex) => {
+                var workMult = 0
+                quarry.employees.forEach((employee) => {
+                  workMult+=(employee.speed/quarry.employees.length)
+                  if(employee.payday<=0){
+                    employee.payday=500
+                    money-=employee.wage
+                    employee.xp.Mine++
+                  }
+                  employee.payday--
+                })
+                workMult = (quarry.employees.length/8)*(quarry.employees.length/8)*workMult
+                if(quarry.time<=0){
+                  quarry.time=0
+                  inventory[quarry.currentMineral]++
+                  quarry.currentMineral = quarry.mineables[Math.floor(Math.random()*quarry.mineables.length)]
+                  switch (quarry.currentMineral){
+                    case 'Stone':
+                      quarry.timeTotal = 45
+                      break
+                    case 'Coal':
+                      quarry.timeTotal = 35
+                      break
+                    case 'Quartz':
+                      quarry.timeTotal = 20
+                      break
+                    case 'Iron':
+                      quarry.timeTotal = 60
+                      break
+                  }
+                  quarry.time = quarry.timeTotal
+                }
+                business.quarries[quarrydex].time = quarry.time-workMult
+                if(Math.round((quarry.timeTotal-quarry.time)/quarry.timeTotal*1000)/10>100){
+                  quarry.time = 0
+                }
+                quarrysum+=(quarry.name+' - Mining: '+quarry.currentMineral+' '+String(Math.round((quarry.timeTotal-quarry.time)/quarry.timeTotal*1000)/10)+'%<br>')
+              })
+              document.getElementById('quarries'+index).innerHTML = quarrysum
+              var shaftsum = ''
+              business.shafts.forEach((shaft,shaftdex) => {
+                var workMult = 0
+                shaft.employees.forEach((employee) => {
+                  workMult+=(employee.speed/shaft.employees.length)
+                  if(employee.payday<=0){
+                    employee.payday=500
+                    money-=employee.wage
+                    employee.xp.Mine++
+                  }
+                  employee.payday--
+                })
+                workMult = (shaft.employees.length/5)*(shaft.employees.length/5)*workMult
+                if(shaft.time<=0){
+                  shaft.time=0
+                  inventory[shaft.currentMineral]++
+                  shaft.currentMineral = shaft.mineables[Math.floor(Math.random()*shaft.mineables.length)]
+                  switch (shaft.currentMineral){
+                    case 'Stone':
+                      shaft.timeTotal = 40
+                      break
+                    case 'Coal':
+                      shaft.timeTotal = 30
+                      break
+                    case 'Quartz':
+                      shaft.timeTotal = 15
+                      break
+                    case 'Iron':
+                      shaft.timeTotal = 55
+                      break
+                  }
+                  shaft.time = shaft.timeTotal
+                }
+                business.shafts[shaftdex].time = shaft.time-workMult
+                if(Math.round((shaft.timeTotal-shaft.time)/shaft.timeTotal*1000)/10>100){
+                  shaft.time = 0
+                }
+                shaftsum+=(shaft.name+' - Mining: '+shaft.currentMineral+' '+String(Math.round((shaft.timeTotal-shaft.time)/shaft.timeTotal*1000)/10)+'%<br>')
+                //Stopping Point
+              })
+              document.getElementById('shafts'+index).innerHTML = shaftsum
+              break
+            case 'Oil':
+              var wellsum = ''
+              business.pumps.forEach((pump,pumpdex) => {
+                var workMult = 0
+                pump.employees.forEach((employee) => {
+                  workMult+=(employee.speed/pump.employees.length)
+                  if(employee.payday<=0){
+                    employee.payday=500
+                    money-=employee.wage
+                    employee.xp.Oil++
+                  }
+                  employee.payday--
+                })
+                workMult = (pump.employees.length/6)*(pump.employees.length/6)*workMult
+                business.pumps[pumpdex].time = pump.time-workMult
+                wellsum+='Oil Well #'+(pumpdex+1)+' Pumping:'+String(Math.round((pump.speed-pump.time)/pump.speed*1000)/10)+'%<br>'
+                if(pump.time<=0){
+                  pump.time = pump.speed
+                  inventory.Oil++
+                }
+              })
+              var platformsum = ''
+              business.platforms.forEach((platform,platformdex) => {
+                var workMult = 0
+                platform.employees.forEach(employee => {
+                  workMult+=(employee.speed/platform.employees.length)
+                  if(employee.payday<=0){
+                    employee.payday=500
+                    money-=employee.wage
+                    employee.xp.Oil++
+                  }
+                  employee.payday--
+                })
+                workMult = (platform.employees.length/200)*(platform.employees.length/200)*workMult*platform.speed
+                business.platforms[platformdex].oil = platform.oil+workMult
+                platformsum+='Oil Platform #'+(platformdex+1)+' Producing '+String(Math.round(workMult*1000)/100)+' Oil Per Second<br>'
+                while(platform.oil>=1){
+                  platform.oil--
+                  inventory.Oil++
+                }
+              })
+              document.getElementById('wells'+index).innerHTML = wellsum
+              document.getElementById('platforms'+index).innerHTML = platformsum
+              break
+            case 'Refinery':
+              var furnaceSum = ''
+              business.furnaces.forEach((furnace,furnacedex) => {
+                try{
+                  var furnaceSelect = document.getElementById('select.'+furnacedex+'.'+index).value
+                  furnace.selected = furnaceSelect
+                }
+                catch(e){
+                  //No furnace div created yet
+                }
+                var furnaceDiv = '<div class="box">'
+                switch (furnace.selected){
+                  case "None":
+                    furnaceDiv+='Furnace #'+(furnacedex+1)
+                    furnaceDiv+='<br>Selected:'
+                    furnaceDiv+='<select id="select.'+furnacedex+'.'+index+'"><option value="None">None</option><option value="Steel">Steel</option><option value="Silicon">Silicon</option></select>'
+                    break
+                  case "Steel":
+                    furnaceDiv+='Furnace #'+(furnacedex+1)
+                    furnaceDiv+='<br>Selected:'
+                    if(furnace.cookingAmount==0){
+                      furnaceDiv+='<select id="select.'+furnacedex+'.'+index+'"><option value="None">None</option><option selected="selected" value="Steel">Steel</option><option value="Silicon">Silicon</option></select>'
+                      furnaceDiv+='<p>1 Iron, 2 Coal → 1 Steel</p><input type="number" id="load.'+furnacedex+'.'+index+'" class="numput" min="1" max="99999"><button onclick="loadFurnace(`'+furnacedex+'`,`'+index+'`)">Load Furnace</button>'
+                    }else{
+                      furnaceDiv+='<select disabled="True" id="select.'+furnacedex+'.'+index+'"><option value="None">None</option><option selected="selected" value="Steel">Steel</option><option value="Silicon">Silicon</option></select>'
+                      furnaceDiv+='<p id="cooking.'+furnacedex+'.'+index+'">Refining:      </p>'
+                    }
+                    break
+                  case "Silicon":
+                    furnaceDiv+='Furnace #'+(furnacedex+1)
+                    furnaceDiv+='<br>Selected:'
+                    if(furnace.cookingAmount==0){
+                      furnaceDiv+='<select id="select.'+furnacedex+'.'+index+'"><option value="None">None</option><option value="Steel">Steel</option><option selected="selected" value="Silicon">Silicon</option></select>'
+                      furnaceDiv+='<p>2 Quartz, 5 Coal → 1 Silicon</p><input type="number" id="load.'+furnacedex+'.'+index+'" class="numput" min="1" max="99999"><button onclick="loadFurnace(`'+furnacedex+'`,`'+index+'`)">Load Furnace</button>'
+                    }else{
+                      furnaceDiv+='<select disabled="True" id="select.'+furnacedex+'.'+index+'"><option value="None">None</option><option value="Steel">Steel</option><option selected="selected" value="Silicon">Silicon</option></select>'
+                      furnaceDiv+='<p id="cooking.'+furnacedex+'.'+index+'">Refining:      </p>'
+                    }
+                    break
+                }
+                furnaceDiv+='</div>'
+                furnaceSum+=furnaceDiv
+              })
+              var rawInner = document.getElementById('furnaces'+index).innerHTML
+              var inner = rawInner.replace(/Refining\: ...../g,'Refining:      ')
+              if(inner!=furnaceSum){
+                document.getElementById('furnaces'+index).innerHTML = furnaceSum
+              }
+
+              business.furnaces.forEach((furnace, furnacedex) => {
+                if(furnace.cookingAmount!=0){
+                  var workMult = 0
+                  furnace.employees.forEach((employee) => {
+                    workMult+=(employee.speed/furnace.employees.length)
+                    if(employee.payday<=0){
+                      employee.payday=500
+                      money-=employee.wage
+                      employee.xp.Refinery++
+                    }
+                    employee.payday--
+                  })
+                  workMult = (furnace.employees.length/5)*(furnace.employees.length/5)*workMult
+                  if(furnace.cookingTime==0&&furnace.cookingAmount!=0){
+                    var reqTime = 0
+                    switch (furnace.selected){
+                      case "None":
+                        reqTime = Infinity
+                        break
+                      case "Steel":
+                        reqTime = 100
+                        break
+                      case "Silicon":
+                        reqTime = 150
+                        break
+                    }
+                      furnace.cookingTime = reqTime*(0.8+(0.2*furnace.cookingAmount))
+                      furnace.totalTime = reqTime*(0.8+(0.2*furnace.cookingAmount))
+                  }
+                  if(furnace.cookingTime!=0&&furnace.cookingAmount!=0){
+                    furnace.cookingTime = Math.round((furnace.cookingTime-workMult)*10)/10
+                    if(furnace.cookingTime<0){
+                      furnace.cookingTime = 0
+                    }
+                    var newStr = ("Refining: "+(Math.round(((furnace.totalTime-furnace.cookingTime)/furnace.totalTime)*1000)/10)+'%')
+                    while (newStr.length<15){
+                      newStr+=' '
+                    }
+                    document.getElementById('cooking.'+furnacedex+'.'+index).innerHTML = newStr
+                    if(furnace.cookingTime<=0){
+                      inventory[furnace.selected]+=furnace.cookingAmount
+                      furnace.cookingAmount = 0
+                      furnace.cookingTime = 0
+                    }
+                  }
+                }
+              })
+              break
+            case 'Fabrication':
+              var factorySum = ''
+              business.factories.forEach((factory,factorydex) => {
+                try{
+                  var factorySelect = document.getElementById('select.'+factorydex+'.'+index).value
+                  factory.selected = factorySelect
+                }
+                catch(e){
+                  //No factory div created yet
+                }
+                var factoryDiv = '<div class="box">'
+                switch (factory.selected){
+                  case "None":
+                    factoryDiv+='Factory #'+(factorydex+1)
+                    factoryDiv+='<br>Configured For:'
+                    factoryDiv+='<select id="select.'+factorydex+'.'+index+'"><option value="None">None</option><option value="Semi Autonomous Mining Machine">Semi Autonomous Mining Machine</option><option value="Forestry Harvester">Forestry Harvester</option></select>'
+                    break
+                  case "Semi Autonomous Mining Machine":
+                    factoryDiv+='Factory #'+(factorydex+1)
+                    factoryDiv+='<br>Configured For:'
+                    if(factory.makingAmount==0){
+                      factoryDiv+='<select disabled="True" id="select.'+factorydex+'.'+index+'"><option value="None">None</option><option selected="selected" value="Semi Autonomous Mining Machine">Semi Autonomous Mining Machine</option><option value="Forestry Harvester">Forestry Harvester</option></select>'
+                      factoryDiv+='<p>150 Steel, 50 Stone, 20 Silicon, 20 Oil → Semi Autonomous Mining Machine</p><input type="number" id="start.'+factorydex+'.'+index+'" class="numput" min="1" max="99999"><button onclick="startFactory(`'+factorydex+'`,`'+index+'`)">Start Fabrication</button>'
+                    }else{
+                      factoryDiv+='<select disabled="True" id="select.'+factorydex+'.'+index+'"><option value="None">None</option><option selected="selected" value="Semi Autonomous Mining Machine">Semi Autonomous Mining Machine</option><option value="Forestry Harvester">Forestry Harvester</option></select>'
+                      factoryDiv+='<p id="making.'+factorydex+'.'+index+'">Fabricating:      </p>'
+                    }
+                    break
+                  case "Forestry Harvester":
+                    factoryDiv+='Factory #'+(factorydex+1)
+                    factoryDiv+='<br>Configured For:'
+                    if(factory.makingAmount==0){
+                      factoryDiv+='<select disabled="True" id="select.'+factorydex+'.'+index+'"><option value="None">None</option><option value="Semi Autonomous Mining Machine">Semi Autonomous Mining Machine</option><option selected="selected" value="Forestry Harvester">Forestry Harvester</option></select>'
+                      factoryDiv+='<p>150 Steel, 50 Stone, 20 Silicon, 20 Oil → Semi Autonomous Mining Machine</p><input type="number" id="start.'+factorydex+'.'+index+'" class="numput" min="1" max="99999"><button onclick="startFactory(`'+factorydex+'`,`'+index+'`)">Start Fabrication</button>'
+                    }else{
+                      factoryDiv+='<select disabled="True" id="select.'+factorydex+'.'+index+'"><option value="None">None</option><option value="Semi Autonomous Mining Machine">Semi Autonomous Mining Machine</option><option selected="selected" value="Forestry Harvester">Forestry Harvester</option></select>'
+                      factoryDiv+='<p id="making.'+factorydex+'.'+index+'">Fabricating:      </p>'
+                    }
+                    break
+                }
+                factoryDiv+='</div>'
+                factorySum+=factoryDiv
+              })
+              var rawInner = document.getElementById('factories'+index).innerHTML
+              var inner = rawInner.replace(/Fabricating\: ...../g,'Fabricating:      ')
+              if(inner!=factorySum){
+                document.getElementById('factories'+index).innerHTML = factorySum
+              }
+      
+              business.factories.forEach((factory, factorydex) => {
+                if(factory.makingAmount!=0){
+                  var workMult = 0
+                  factory.employees.forEach((employee) => {
+                    workMult+=(employee.speed/factory.employees.length)
+                    if(employee.payday<=0){
+                      employee.payday=500
+                      money-=employee.wage
+                      employee.xp.Fabrication++
+                    }
+                    employee.payday--
+                  })
+                  workMult = (factory.employees.length/5)*(factory.employees.length/5)*workMult
+                  if(factory.makingTime==0&&factory.makingAmount!=0){
+                    var reqTime = 0
+                    switch (factory.selected){
+                      case "None":
+                        reqTime = Infinity
+                        break
+                      case "Semi Autonomous Mining Unit":
+                        reqTime = 250
+                        break
+                      case "Forestry Harvester":
+                        reqTime = 200
+                        break
+                    }
+                      factory.makingTime = reqTime*(0.6+(0.4*factory.makingAmount))
+                      factory.totalTime = reqTime*(0.6+(0.4*factory.makingAmount))
+                  }
+                  if(factory.makingTime!=0&&factory.makingAmount!=0){
+                    factory.makingTime = Math.round((factory.makingTime-workMult)*10)/10
+                    if(factory.makingTime<0){
+                      factory.makingTime = 0
+                    }
+                    var newStr = ("Fabricating: "+(Math.round(((factory.totalTime-factory.makingTime)/factory.totalTime)*1000)/10)+'%')
+                    while (newStr.length<15){
+                      newStr+=' '
+                    }
+                    document.getElementById('making.'+factorydex+'.'+index).innerHTML = newStr
+                    if(factory.makingTime<=0){
+                      inventory[factory.selected]+=factory.makingAmount
+                      factory.makingAmount = 0
+                      factory.makingTime = 0
+                    }
+                  }
+                }
+              })
+              break
+          }
+        })
+      }
+      function manageEmployees(businessIndex,businessType){
+        document.getElementById('employeeManager').style.display = 'inline'
+        var business = businesses[businessIndex]
+        var div = ''
+        switch (businessType){
+          case 'Lumber':
+            business.forests.forEach((forest,forestdex) => {
+              div+='<div class="employeeDiv" id="forest'+forestdex+'">'
+              div+='<h3>Forest Plot #'+(forestdex+1)+'</h3>'
+              div+='<p>Employees: '+forest.employees.length+'/20</p>'
+              forest.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.forests.'+forestdex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(forest.employees.length<20){
+                div+='<button onclick="startHire(`'+businessIndex+'.forests.'+forestdex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            break
+          case 'Mine':
+            business.quarries.forEach((quarry,quarrydex) => {
+              div+='<div class="employeeDiv" id="quarry'+quarrydex+'">'
+              div+='<h3>'+quarry.name+'</h3>'
+              div+='<p>Employees: '+quarry.employees.length+'/8</p>'
+              quarry.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.quarries.'+quarrydex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(quarry.employees.length<8){
+                div+='<button onclick="startHire(`'+businessIndex+'.quarries.'+quarrydex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            business.shafts.forEach((shaft,shaftdex) => {
+              div+='<div class="employeeDiv" id="shaft'+shaftdex+'">'
+              div+='<h3>'+shaft.name+'</h3>'
+              div+='<p>Employees: '+shaft.employees.length+'/6</p>'
+              shaft.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.shafts.'+shaftdex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(shaft.employees.length<5){
+                div+='<button onclick="startHire(`'+businessIndex+'.shafts.'+shaftdex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            break
+          case 'Oil':
+            business.pumps.forEach((pump,pumpdex) => {
+              div+='<div class="employeeDiv" id="pump'+pumpdex+'">'
+              div+='<h3>Oil Well #'+(pumpdex+1)+'</h3>'
+              div+='<p>Employees: '+pump.employees.length+'/6</p>'
+              pump.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.pumps.'+pumpdex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(pump.employees.length<6){
+                div+='<button onclick="startHire(`'+businessIndex+'.pumps.'+pumpdex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            business.platforms.forEach((platform,platformdex) => {
+              div+='<div class="employeeDiv" id="platform'+platformdex+'">'
+              div+='<h3>Oil Platform #'+(platformdex+1)+'</h3>'
+              div+='<p>Employees: '+platform.employees.length+'/6</p>'
+              platform.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.platforms.'+platformdex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(platform.employees.length<200){
+                div+='<button onclick="startHire(`'+businessIndex+'.platforms.'+platformdex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            break
+          case 'Refinery':
+            business.furnaces.forEach((furnace,furnacedex) => {
+              div+='<div class="employeeDiv" id="furnace'+furnacedex+'">'
+              div+='<h3>Furnace #'+(furnacedex+1)+'</h3>'
+              div+='<p>Employees: '+furnace.employees.length+'/6</p>'
+              furnace.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.furnaces.'+furnacedex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(furnace.employees.length<6){
+                div+='<button onclick="startHire(`'+businessIndex+'.furnaces.'+furnacedex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            break
+          case 'Fabrication':
+            business.factories.forEach((factory,factorydex) => {
+              div+='<div class="employeeDiv" id="factory'+factorydex+'">'
+              div+='<h3>Factory #'+(factorydex+1)+'</h3>'
+              div+='<p>Employees: '+factory.employees.length+'/6</p>'
+              factory.employees.forEach((employee,employeedex) => {
+                div+='<button onclick="startFire(`'+businessIndex+'.factories.'+factorydex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
+              })
+              if(factory.employees.length<6){
+                div+='<button onclick="startHire(`'+businessIndex+'.factories.'+factorydex+'`)" class="greenButton">Hire</button>'
+              }
+              div+='</div>'
+            })
+            break
+        }
+        document.getElementById('employeeManagerDiv').innerHTML = div
+      }
+      
+      var hireLocationRaw
+      function startHire(locationRaw){
+        employeeHireMode = true
+        hireLocationRaw = locationRaw
+        employeeListTick()
+      }
+      var fireLocationRaw
+      function startFire(locationRaw){
+        var location = locationRaw.split('.')
+        location[0] = parseInt(location[0])
+        location[2] = parseInt(location[2])
+        location[3] = parseInt(location[3])
+        var employee = businesses[location[0]][location[1]][location[2]].employees[location[3]]
+        var severance = employee.wage*20
+        if(confirm('You you sure you would like to fire '+employee.name+' with $'+severance+' severance pay?')){
+          money-=severance
+          socket.emit('fire',JSON.parse(JSON.stringify(employee)))
+          businesses[location[0]][location[1]][location[2]].employees.splice(location[3],1)
+          document.getElementById('employeeManager').style.display = 'none'
+        }
+      }
+      var employeeHireMode = false
+      function employeeListTick() {
+        if(employeeHireMode){
+        socket.emit('getEmployees',function(employees){
+          var div = ''
+          employees.forEach((employee) => {
+            div+='<button onclick="finishHire(`'+employee.name+'`)">'+employee.name+' (Wage: $'+employee.wage+')</button><br>'
+          })
+          document.getElementById('employeeManagerDiv').innerHTML = div
+        })
+          setTimeout(employeeListTick,1000)
+        }
+      }
+      function finishHire(employeeName){
+        socket.emit('hire',employeeName,function(employee){
+          var location = hireLocationRaw.split('.')
+          location[0] = parseInt(location[0])
+          location[2] = parseInt(location[2])
+          employee.speed = parseInt(employee.speed)/10
+          employeesList.push(employee)
+          businesses[location[0]][location[1]][location[2]].employees.push(employee)
+        })
+        document.getElementById('employeeManager').style.display = 'none'
+        employeeHireMode = false
+      }
+      function closeEmployeeManager(){
+        document.getElementById('employeeManager').style.display = 'none'
+        employeeHireMode = false
+      }
+
+      function buyForest(index){
+        if(money>=6000){
+          money-=6000
+          var treeNum = Math.floor(Math.random()*10)+Math.floor(Math.random()*10)+Math.floor(Math.random()*10)+Math.floor(Math.random()*10)+Math.floor(Math.random()*10)
+          var treesData = []
+          while (treeNum>0){
+            treeNum--
+            if(Math.floor(Math.random()*2)==0){
+              treesData.push(Math.ceil(Math.random()*50)+Math.floor(Math.random()*50))
+            }else{
+              treesData.push(100)
+            }
+          }
+          businesses[parseInt(index)].forests.push({trees:treesData,employees:[]})
+        }
+      }
+      function plantTree(businessIndex,forestIndex){
+        if(money>=100){
+          money-=100
+          businesses[businessIndex].forests[forestIndex].trees.push(0)
+        }
+      }
+
+      function openQuarry(index){
+        if(money>=3000){
+          money-=3000
+          var minerals = ['Stone','Stone','Stone','Coal','Coal','Quartz','Iron','Copper']
+          var mineables = ['Stone','Stone','Stone','Stone']
+          for (var i = 0; i < 4; i++){
+            var mineable = minerals[Math.floor(Math.random()*minerals.length)]
+            mineables.push(mineable)
+            minerals.push(mineable)
+          }
+          var stoneNum = 0
+          var others = []
+          mineables.forEach((mineable) => {
+            if(mineable=='Stone'){
+              stoneNum++
+            }else{
+              others.push(mineable)
+            }
+          })
+          mineType = [...new Set(others)];
+          var quarryName
+          if(stoneNum>=7){
+            quarryName = 'Stone Quarry'
+          }else{
+            quarryName = 'Open-Pit Mine ('+mineType.join('/')+')'
+          }
+          var quarry = {name:quarryName,mineables:mineables,currentMineral:'Stone',time:75,timeTotal:75,employees:[]}
+          businesses[index].quarries.push(quarry)
+        }
+      }
+      function buildMineshaft(index){
+        if(inventory.Wood>=500 && inventory.Stone>=100 && inventory.Steel>=200){
+          inventory.Wood-=500
+          inventory.Stone-=100
+          inventory.Steel-=200
+          var minerals = ['Coal','Quartz','Copper','Iron']
+          var mineables = ['Stone','Stone','Stone','Stone']
+          if(Math.floor(Math.random()*2)==1){
+            mineables.push('Stone')
+          }
+          for (var i = 0; i < 4; i++){
+            var mineable = minerals[Math.floor(Math.random()*minerals.length)]
+            mineables.push(mineable)
+            minerals.push(mineable)
+            minerals.push(mineable)
+          }
+          var mineType = [...new Set(mineables)];
+          mineType.splice(0,1)
+          var shaftName
+          if(mineType.length>=3){
+            shaftName = 'Variety Mine Shaft'
+          }else{
+            shaftName = 'Mine Shaft ('+mineType.join('/')+')'
+          }
+          var shaft = {name:shaftName,mineables:mineables,currentMineral:'Stone',time:75,timeTotal:75,employees:[]}
+          businesses[index].shafts.push(shaft)
+        }
+      }
+
+      
+      
+      function buildOilWell(index){
+        if(inventory.Stone>=150&&inventory.Steel>=100&&inventory.Silicon>=10&&inventory.Copper>=10){
+          inventory.Stone-=150
+          inventory.Steel-=100
+          inventory.Silicon-=10
+          inventory.Copper-=10
+          var newtime = Math.floor(Math.random()*50)+150
+          businesses[parseInt(index)].pumps.push({speed:newtime,time:newtime,employees:[]})
+        }
+      }
+      function buildOilPlatform(index){
+        if(inventory.Stone>=10000&&inventory.Steel>=4500&&inventory.Silicon>=200&&inventory.Copper>=400&&inventory.Wood>=750){
+          inventory.Stone-=10000
+          inventory.Steel-=4500
+          inventory.Silicon-=200
+          inventory.Copper-=400
+          inventory.Wood-=750
+          var speed = ((Math.floor(Math.random()*9)-4)/200)+0.4
+          businesses[index].platforms.push({speed:speed,oil:0,employees:[]})
+        }
+      }
+      
+      function buildFurnace(index){
+        if(inventory.Stone>=75&&inventory.Iron>=20&&inventory.Oil>=30){
+          inventory.Stone-=75
+          inventory.Iron-=20
+          inventory.Oil-=30
+          businesses[index].furnaces.push({selected:'None',cookingAmount:0,cookingTime:0,totalTime:0,employees:[]})
+        }
+      }
+      function loadFurnace(furnacedex,index){
+        var loadAmount = parseInt(document.getElementById('load.'+furnacedex+'.'+index).value)
+        if(loadAmount>0){
+          var loadType = document.getElementById('select.'+furnacedex+'.'+index).value
+          var ingredients = []
+          var recipe
+          switch (loadType){
+            case 'Steel':
+              ingredients = ['Iron','Coal']
+              recipe = {Iron:1,Coal:2}
+              break
+            case 'Silicon':
+              ingredients = ['Quartz','Coal']
+              recipe = {Quartz:2,Coal:5}
+              break
+            default:
+              break
+          }
+          var canComplete = 0
+          ingredients.forEach((ingredient) => {
+            if(inventory[ingredient]>=loadAmount*recipe[ingredient]){
+              canComplete+=(1/ingredients.length)
+            }else{
+              alert('Not enough '+ingredient+'!')
+            }
+          })
+          if(canComplete==1){
+            businesses[index].furnaces[furnacedex].cookingAmount = loadAmount
+            ingredients.forEach((ingredient) => {
+              inventory[ingredient]-=loadAmount*recipe[ingredient]
+            })
+          }
+        }
+      }
+
+      function buildFactory(index){
+        if(inventory.Stone>=100&&inventory.Steel>=50&&inventory.Oil>=15){
+          inventory.Stone-=100
+          inventory.Steel-=50
+          inventory.Oil-=15
+          businesses[index].factories.push({selected:'None',makingAmount:0,makingTime:0,totalTime:0,employees:[]})
+        }
+      }
+      function startFactory(factorydex,index){
+        var makeAmount = parseInt(document.getElementById('start.'+furnacedex+'.'+index).value)
+        if(loadAmount>0){
+          var loadType = document.getElementById('select.'+factorydex+'.'+index).value
+          var ingredients = []
+          var recipe
+          switch (loadType){
+            case 'Semi Autonomous Mining Machine':
+              ingredients = ['Steel','Stone','Silicon','Oil']
+              recipe = {Steel:150,Stone:50,Silicon:20,Oil:20}
+              break
+            case 'Forestry Harvester':
+              ingredients = ['Steel','Silicon','Copper','Oil']
+              recipe = {Steel:200,Silicon:10,Copper:10,Oil:20}
+              break
+            default:
+              break
+          }
+          var canComplete = 0
+          ingredients.forEach((ingredient) => {
+            if(inventory[ingredient]>=makeAmount*recipe[ingredient]){
+              canComplete+=(1/ingredients.length)
+            }else{
+              alert('Not enough '+ingredient+'!')
+            }
+          })
+          if(canComplete==1){
+            businesses[index].factories[furnacedex].makingAmount = makeAmount
+            ingredients.forEach((ingredient) => {
+              inventory[ingredient]-=makeAmount*recipe[ingredient]
+            })
+          }
+        }
+      }
+      
+      function openBusiness(){
+        document.getElementById('openBusiness').style.display = 'block'
+        document.getElementById('openBusinessBtn').style.display = 'none'
+      }
+      function cancelBusiness(){
+        document.getElementById('openBusiness').style.display = 'none'
+        document.getElementById('openBusinessBtn').style.display = 'block'
+      }
+      
+      function newBusiness(type,name){
+        if(money>=10000){
+          money-=10000
+        cancelBusiness()
+        switch (type){
+          case 'Lumber':
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><p id="forests'+businesses.length+'"></p><button onclick="buyForest('+businesses.length+')">Buy Forested Land : $6000</button><br><button onclick="manageEmployees('+businesses.length+',`Lumber`)">Manage Employees</button></div>'
+            businesses.push({name:name,type:'Lumber',forests:[]})
+            break
+          case 'Mine':
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><p id="quarries'+businesses.length+'"></p><p id="shafts'+businesses.length+'"></p><button onclick="openQuarry('+businesses.length+')">Open Open-Pit Mine : $3000</button><br><button onclick="buildMineshaft('+businesses.length+')">Build Mineshaft : x500 Wood, x100 Stone, x200 Steel</button><br><button onclick="manageEmployees('+businesses.length+',`Mine`)">Manage Employees</button></div>'
+            businesses.push({name:name,type:'Mine',quarries:[],shafts:[]})
+            break
+          case 'Oil':
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><div id="wells'+businesses.length+'"></div><div id="platforms'+businesses.length+'"></div><button onclick="buildOilWell('+businesses.length+')">Build Oil Well : x150 Stone, x100 Steel, x10 Silicon, x10 Copper</button><br><button onclick="buildOilPlatform('+businesses.length+')">Build Oil Platform : x10000 Stone, x4500 Steel, x750 Wood, x200 Silicon, x400 Copper</button><br><button onclick="manageEmployees('+businesses.length+',`Oil`)">Manage Employees</button></div>'
+            businesses.push({name:name,type:'Oil',pumps:[],platforms:[]})
+            break
+          case 'Refinery':
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><div id="furnaces'+businesses.length+'"></div><br><button onclick="buildFurnace('+businesses.length+')">Build Furnace : x75 Stone, x20 Iron, x30 Oil</button><br><button onclick="manageEmployees('+businesses.length+',`Refinery`)">Manage Employees</button></div>'
+            businesses.push({name:name,type:'Refinery',furnaces:[]})
+            break
+          case 'Fabrication':
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><div id="factories'+businesses.length+'"></div><br><button onclick="buildFactory('+businesses.length+')">Build Factory : x100 Stone, x50 Steel, x15 Oil</button><br><button onclick="manageEmployees('+businesses.length+',`Fabrication`)">Manage Employees</button></div>'
+            businesses.push({name:name,type:'Fabrication',factories:[]})
+            break
+          default:
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3></div>'
+        }
+        openTab('Businesses')
+        }else{
+          alert('Not Enough Money!')
+        }
+      }
+      function buy(index){
+        var item = sellinglist[index]
+        if(money>=item.price){
+          socket.emit('buyitem',item,(item)=>{
+            money-=item.price
+            inventory[item.type] = inventory[item.type]+item.quantity
+          })
+        }
+      }
+      function fulfill(index){
+        var item = buyinglist[index]
+        if(inventory[item.type]>=item.quantity){
+          socket.emit('fulfillitem',item,(item)=>{
+            money+=item.price
+            inventory[item.type] = inventory[item.type]-item.quantity
+          })
+        }
+      }
+
+      function loan(){
+        var loanamount = parseInt(document.getElementById('loanamount').value)
+        document.getElementById('loanamount').value = ''
+        if(loanamount<=1000000){
+          money+=loanamount
+          loans.push({amount:loanamount,interest:0.05,paid:0})
+        }else{
+          alert('The amount you have requested is too much!')
+        }
+      }
+      
+      function sell(item){
+        var quantity = parseInt(prompt('How much do you want to sell? (You have '+inventory[item]+')'))
+        var price = parseInt(prompt('For how much money?'))
+        if(quantity>0&&price>=0&&inventory[item]>=quantity){
+          socket.emit('sellitem',{type:item,quantity:quantity,price:price,ownername:company.name,ownerid:company.id})
+          inventory[item] = inventory[item]-quantity
+        }
+      }
+      function request(item){
+        var quantity = parseInt(prompt('How much do you want to buy?'))
+        var price = parseInt(prompt('For how much money?'))
+        if(quantity>0&&price>=0&&money>=price){
+          socket.emit('requestitem',{type:item,quantity:quantity,price:price,requestername:company.name,requesterid:company.id})
+          money-=price
+        }
+      }
+
+      socket.on('sold',function(item){
+        money+=item.price
+        alert('Your x'+item.quantity+' '+item.type+' sold for $'+item.price)
+      })
+      socket.on('fulfilled',function(item){
+        inventory[item.type]+=item.quantity
+        alert('Your x'+item.quantity+' '+item.type+' request was fulfilled!')
+      })
+    </script>
+    <h1 id='head'></h1>
+    <h2 id='money'></h2>
+    <div id='tabs'>
+    <div class="bar">
+      <button class="tabbing" onclick="openTab('Businesses')">Businesses</button><button class="tabbing" onclick="openTab('Inventory')">Inventory</button><button class="tabbing" onclick="openTab('Market')">Market</button><button class="tabbing" onclick="openTab('Bank')">Bank</button>
+    </div>
+      <div id="Businesses" class="tab">
+        <h2>Businesses</h2>
+      </div>
+      <div id="Inventory" class="tab" style="display:none">
+        <h2>Inventory</h2>
+        <div id='inventorylist'></div>
+      </div>
+      <div id="Market" class="tab" style="display:none">
+        <h2>Market</h2>
+        <div id='selling'></div>
+        <div id='buying'></div>
+        <div id='whitespace'></div>
+      </div>
+      <div id="Bank" class="tab" style='display:none'>
+        <h2>Bank</h2>
+        <button id='openBusinessBtn' onclick='openBusiness()'>Open New Subsidary Business</button>
+        <div id='openBusiness' style='display:none'>
+          <p>New Subsidary Business</p>
+          <label>Business Type</label>
+          <select id='businessType'>
+            <option value='Lumber'>Lumber</option>
+            <option value='Mine'>Mine</option>
+            <option value='Oil'>Oil</option>
+            <option value='Refinery'>Refinery</option>
+            <option value='Fabrication'>Fabrication</option>
+          </select>
+          <br>
+          <label>Business Name</label>
+          <input type='text' id='businessName'>
+          <br>
+          <button onclick='newBusiness(document.getElementById("businessType").value,document.getElementById("businessName").value)'>Open New Business : $10,000</button><button onclick='cancelBusiness()'>Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id='employeeManager'>
+      <button class='close' onclick='closeEmployeeManager()'>X</button>
+      <h3>Employee Manager</h3>
+      <div id='employeeManagerDiv'></div>
+    </div>
+  </body>
+</html>

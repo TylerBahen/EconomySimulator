@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <title>New Game - Economy Simulator</title>
+    <style>
+      body{
+        background-color:whitesmoke;
+      }
+      form {
+        position:absolute;
+        left:25%;
+        right:25%;
+        top:10%;
+        overflow:auto;
+        animation-name:unfold;
+        animation-duration:1s;
+        animation-delay:1s;
+        animation-fill-mode:both;
+      }
+      @keyframes unfold{
+        from {
+          height:0%;
+        }
+        to {
+          height:80%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <form action='/play'>
+        <fieldset>
+          <legend>Company Creation Application</legend>
+          <label for='cname'>Company Name:</label>
+          <input type='text' id='cname' name='cname' maxlength="20">
+          <br>
+          <label for='ctype'>Company Type:</label>
+          <select name='ctype'>
+            <option value='Lumber'>Lumber</option>
+            <option value='Mine'>Mine</option>
+            <option value='Oil'>Oil</option>
+            <option value='Refinery'>Refinery</option>
+          </select>
+          <br>
+          <label for='ccolor'>Company Color:</label>
+          <input type='color' id='ccolor' name='ccolor' value='#ffffff'>
+          <br>
+          <input type='submit' value='Submit'>
+        </fieldset>
+      </form>
+    </div>
+  </body>
+</html>
