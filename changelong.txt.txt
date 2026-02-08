@@ -17,4 +17,7 @@ December, 2022:
 Jan, 2023:
   Added Refining and Fabrication businesses
   Added market bot adapting
-  
+
+Feb, 2026:
+  Modified game files to run without replit.
+  Minor bug fixes and quality of life changes.

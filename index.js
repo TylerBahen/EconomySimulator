@@ -1,6 +1,8 @@
 var version = 'Alpha'
 
 //var tinycolor = require('tinycolor2')
+var CCC = require('color-contrast-checker')
+var ccc = new CCC();
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
@@ -230,7 +232,8 @@ io.on('connection',function(client){
     client.name = info.cname
     client.color = info.ccolor
     client.type = info.ctype
-    callback(client.id,true)//client.id,tinycolor(client.color).isLight())
+    
+    callback(client.id,ccc.isLevelAA(client.color,'#000000',32))//client.id,tinycolor(client.color).isLight())
     info.id = client.id
     users.push({name:client.name,color:client.color,id:client.id,type:client.type})
     botAdapt(client.type,'connect')
