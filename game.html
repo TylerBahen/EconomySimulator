@@ -308,7 +308,7 @@
                 forest.employees.forEach((employee) => {
                   workMult+=(employee.speed/forest.employees.length)
                   if(employee.payday<=0){
-                    employee.payday=500
+                    employee.payday=600
                     money-=employee.wage
                     employee.xp.Lumber++
                   }
@@ -355,7 +355,7 @@
                 quarry.employees.forEach((employee) => {
                   workMult+=(employee.speed/quarry.employees.length)
                   if(employee.payday<=0){
-                    employee.payday=500
+                    employee.payday=600
                     money-=employee.wage
                     employee.xp.Mine++
                   }
@@ -368,16 +368,19 @@
                   quarry.currentMineral = quarry.mineables[Math.floor(Math.random()*quarry.mineables.length)]
                   switch (quarry.currentMineral){
                     case 'Stone':
-                      quarry.timeTotal = 40
-                      break
-                    case 'Coal':
                       quarry.timeTotal = 30
                       break
-                    case 'Quartz':
+                    case 'Coal':
                       quarry.timeTotal = 15
                       break
+                    case 'Quartz':
+                      quarry.timeTotal = 20
+                      break
                     case 'Iron':
-                      quarry.timeTotal = 50
+                      quarry.timeTotal = 40
+                      break
+                    case 'Copper':
+                      quarry.timeTotal = 45
                       break
                   }
                   quarry.time = quarry.timeTotal
@@ -395,7 +398,7 @@
                 shaft.employees.forEach((employee) => {
                   workMult+=(employee.speed/shaft.employees.length)
                   if(employee.payday<=0){
-                    employee.payday=500
+                    employee.payday=600
                     money-=employee.wage
                     employee.xp.Mine++
                   }
@@ -408,17 +411,19 @@
                   shaft.currentMineral = shaft.mineables[Math.floor(Math.random()*shaft.mineables.length)]
                   switch (shaft.currentMineral){
                     case 'Stone':
-                      shaft.timeTotal = 25
+                      shaft.timeTotal = 10
                       break
                     case 'Coal':
-                      shaft.timeTotal = 17
-                      break
-                    case 'Quartz':
                       shaft.timeTotal = 7
                       break
-                    case 'Iron':
-                      shaft.timeTotal = 30
+                    case 'Quartz':
+                      shaft.timeTotal = 10
                       break
+                    case 'Iron':
+                      shaft.timeTotal = 20
+                      break
+                    case 'Copper':
+                      shaft.timeTotal = 22
                   }
                   shaft.time = shaft.timeTotal
                 }
@@ -438,7 +443,7 @@
                 pump.employees.forEach((employee) => {
                   workMult+=(employee.speed/pump.employees.length)
                   if(employee.payday<=0){
-                    employee.payday=500
+                    employee.payday=600
                     money-=employee.wage
                     employee.xp.Oil++
                   }
@@ -458,7 +463,7 @@
                 platform.employees.forEach(employee => {
                   workMult+=(employee.speed/platform.employees.length)
                   if(employee.payday<=0){
-                    employee.payday=500
+                    employee.payday=600
                     money-=employee.wage
                     employee.xp.Oil++
                   }
@@ -532,7 +537,7 @@
                   furnace.employees.forEach((employee) => {
                     workMult+=(employee.speed/furnace.employees.length)
                     if(employee.payday<=0){
-                      employee.payday=500
+                      employee.payday=600
                       money-=employee.wage
                       employee.xp.Refinery++
                     }
@@ -629,7 +634,7 @@
                   factory.employees.forEach((employee) => {
                     workMult+=(employee.speed/factory.employees.length)
                     if(employee.payday<=0){
-                      employee.payday=500
+                      employee.payday=600
                       money-=employee.wage
                       employee.xp.Fabrication++
                     }
@@ -709,7 +714,7 @@
             business.shafts.forEach((shaft,shaftdex) => {
               div+='<div class="employeeDiv" id="shaft'+shaftdex+'">'
               div+='<h3>'+shaft.name+'</h3>'
-              div+='<p>Employees: '+shaft.employees.length+'/6</p>'
+              div+='<p>Employees: '+shaft.employees.length+'/5</p>'
               shaft.employees.forEach((employee,employeedex) => {
                 div+='<button onclick="startFire(`'+businessIndex+'.shafts.'+shaftdex+'.'+employeedex+'`)" class="redButton">Fire</button> '+employee.name+' (Efficiency:'+employee.speed+' Wage:$'+employee.wage+')<br>'
               })
