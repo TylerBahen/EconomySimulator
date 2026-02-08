@@ -57,8 +57,8 @@ function generateEmployee() {
           if(newSpeed>10){
             newSpeed--
           }
-          var wage = Math.floor(newSpeed*0.6)+Math.round((Math.floor(Math.random()*4)-2)/2)
-          while (wage<5){
+          var wage = Math.floor(newSpeed*0.6)+Math.round((Math.floor(Math.random()*4)-3)/2)
+          while (wage<4){
             wage++
           }
           var lumXP = Math.floor(Math.random()*1000)
@@ -124,7 +124,7 @@ function tickSec(){
 function botSell(){
   if(Math.floor(Math.random()*15*(Math.ceil(users.length/5)/2))==0){
     var item = items[Math.floor(Math.random()*items.length)]
-    var mult = 10**Math.ceil(Math.random()*2)
+    var mult = 10**Math.ceil((Math.random()*3)/2)
     var quantity = Math.ceil(Math.random()*mult)
     selling.push({type:item,quantity:quantity,price:Math.ceil((marketPrices[item]*1.1)*quantity),ownername:genericName()})
   }
@@ -150,7 +150,7 @@ function botBuy(){
 function botRequest(){
   if(Math.floor(Math.random()*15*Math.ceil((users.length/5)/2))==0){
     var item = items[Math.floor(Math.random()*items.length)]
-    var mult = 10**Math.ceil(Math.random()*2)
+    var mult = 10**Math.ceil((Math.random()*3)/2)
     var quantity = Math.ceil(Math.random()*mult)
     buying.push({type:item,quantity:quantity,price:Math.floor((marketPrices[item]*0.9)*quantity),requestername:genericName()})
   }
@@ -215,7 +215,7 @@ function shakeEmployees(){
         generateEmployee()
       }else{
         try{
-          if(employees.length>10){
+          if(employees.length>20){
             employees.splice(Math.floor(Math.random()*employees.length))
           }
         }
@@ -311,6 +311,7 @@ io.on('connection',function(client){
       if(name==employee.name){
         try{
         callback(employees[index])
+          console.log('Employee Hired:\n'+JSON.stringify(employee))
           employees.splice(index,1)
         }
         catch(e){
@@ -321,10 +322,12 @@ io.on('connection',function(client){
   })
   client.on('fire',function(employee){
     employees.push(employee)
+    console.log('Employee Fired:\n'+JSON.stringify(employee))
   })
 })
   
 server.listen(3000)
+shakeEmployees()
 tickMin()
 tickSec()
 while (selling.length<25){

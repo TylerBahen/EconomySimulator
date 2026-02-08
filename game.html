@@ -52,6 +52,7 @@
       .businessbox {
         border-style: solid;
         border-width: 3px;
+        margin-bottom:20px;
       }
       .numput{
         width: 4em;
@@ -152,6 +153,11 @@
         background: #bbb;
         color:white;
         border-style:inset;
+      }
+
+      .marketBtn {
+        width:100%;
+        text-align: left;
       }
 
       .redButton {
@@ -275,7 +281,7 @@
           sellinglist = selling
           var newSelling = '<h3>Selling</h3>'
           selling.forEach((item,index) => {
-            newSelling += '<p><button onclick="buy('+index+')">x'+item.quantity+' '+item.type+' : $'+item.price+' ('+item.ownername+')</button></p>'
+            newSelling += '<p><button class="marketBtn" onclick="buy('+index+')">x'+item.quantity+' '+item.type+' : $'+item.price+' ('+item.ownername+')</button></p>'
           })
           if(document.getElementById('selling').innerHTML!=newSelling){
             document.getElementById('selling').innerHTML = newSelling
@@ -283,7 +289,7 @@
           buyinglist = buying
           var newBuying = '<h3>Buying</h3>'
           buying.forEach((item,index) => {
-            newBuying += '<p><button onclick="fulfill('+index+')">x'+item.quantity+' '+item.type+' for $'+item.price+' ('+item.requestername+')</button></p>'
+            newBuying += '<p><button class="marketBtn" onclick="fulfill('+index+')">x'+item.quantity+' '+item.type+' for $'+item.price+' ('+item.requestername+')</button></p>'
           })
           if(document.getElementById('buying').innerHTML!=newBuying){
             document.getElementById('buying').innerHTML = newBuying
@@ -362,16 +368,16 @@
                   quarry.currentMineral = quarry.mineables[Math.floor(Math.random()*quarry.mineables.length)]
                   switch (quarry.currentMineral){
                     case 'Stone':
-                      quarry.timeTotal = 45
+                      quarry.timeTotal = 40
                       break
                     case 'Coal':
-                      quarry.timeTotal = 35
+                      quarry.timeTotal = 30
                       break
                     case 'Quartz':
-                      quarry.timeTotal = 20
+                      quarry.timeTotal = 15
                       break
                     case 'Iron':
-                      quarry.timeTotal = 60
+                      quarry.timeTotal = 50
                       break
                   }
                   quarry.time = quarry.timeTotal
@@ -402,16 +408,16 @@
                   shaft.currentMineral = shaft.mineables[Math.floor(Math.random()*shaft.mineables.length)]
                   switch (shaft.currentMineral){
                     case 'Stone':
-                      shaft.timeTotal = 40
+                      shaft.timeTotal = 25
                       break
                     case 'Coal':
-                      shaft.timeTotal = 30
+                      shaft.timeTotal = 17
                       break
                     case 'Quartz':
-                      shaft.timeTotal = 15
+                      shaft.timeTotal = 7
                       break
                     case 'Iron':
-                      shaft.timeTotal = 55
+                      shaft.timeTotal = 30
                       break
                   }
                   shaft.time = shaft.timeTotal
@@ -514,6 +520,8 @@
               })
               var rawInner = document.getElementById('furnaces'+index).innerHTML
               var inner = rawInner.replace(/Refining\: ...../g,'Refining:      ')
+              console.log(inner)
+              console.log(furnaceSum)
               if(inner!=furnaceSum){
                 document.getElementById('furnaces'+index).innerHTML = furnaceSum
               }
@@ -785,6 +793,7 @@
         var severance = employee.wage*20
         if(confirm('You you sure you would like to fire '+employee.name+' with $'+severance+' severance pay?')){
           money-=severance
+          employee.speed = employee.speed*10
           socket.emit('fire',JSON.parse(JSON.stringify(employee)))
           businesses[location[0]][location[1]][location[2]].employees.splice(location[3],1)
           document.getElementById('employeeManager').style.display = 'none'
@@ -796,7 +805,21 @@
         socket.emit('getEmployees',function(employees){
           var div = ''
           employees.forEach((employee) => {
-            div+='<button onclick="finishHire(`'+employee.name+'`)">'+employee.name+' (Wage: $'+employee.wage+')</button><br>'
+            var hireType = businesses[parseInt(hireLocationRaw.split('.')[0])].type
+            var inXP = employee.xp[hireType]
+            var level = 'Novice'
+            if (inXP >=900) {
+              level = 'Master'
+            } else if (inXP >= 700) {
+              level = 'Expert'
+            } else if (inXP >= 500) {
+              level = 'Proficient'
+            } else if (inXP >= 300) {
+              level = 'Beginner'
+            } else {
+              level = 'Novice'
+            }
+            div+='<button title="Experience: '+level+'"onclick="finishHire(`'+employee.name+'`)">'+employee.name+' (Wage: $'+employee.wage+')</button><br>'
           })
           document.getElementById('employeeManagerDiv').innerHTML = div
         })
@@ -869,17 +892,18 @@
           }else{
             quarryName = 'Open-Pit Mine ('+mineType.join('/')+')'
           }
+          console.log(mineables)
           var quarry = {name:quarryName,mineables:mineables,currentMineral:'Stone',time:75,timeTotal:75,employees:[]}
           businesses[index].quarries.push(quarry)
         }
       }
       function buildMineshaft(index){
-        if(inventory.Wood>=500 && inventory.Stone>=100 && inventory.Steel>=200){
+        if(inventory.Wood>=500 && inventory.Stone>=100 && inventory.Steel>=100){
           inventory.Wood-=500
           inventory.Stone-=100
-          inventory.Steel-=200
+          inventory.Steel-=100
           var minerals = ['Coal','Quartz','Copper','Iron']
-          var mineables = ['Stone','Stone','Stone','Stone']
+          var mineables = ['Stone','Stone','Stone']
           if(Math.floor(Math.random()*2)==1){
             mineables.push('Stone')
           }
@@ -897,6 +921,7 @@
           }else{
             shaftName = 'Mine Shaft ('+mineType.join('/')+')'
           }
+          console.log(mineables)
           var shaft = {name:shaftName,mineables:mineables,currentMineral:'Stone',time:75,timeTotal:75,employees:[]}
           businesses[index].shafts.push(shaft)
         }
@@ -947,7 +972,7 @@
               break
             case 'Silicon':
               ingredients = ['Quartz','Coal']
-              recipe = {Quartz:2,Coal:5}
+              recipe = {Quartz:2,Coal:4}
               break
             default:
               break
@@ -1031,7 +1056,7 @@
             businesses.push({name:name,type:'Lumber',forests:[]})
             break
           case 'Mine':
-            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><p id="quarries'+businesses.length+'"></p><p id="shafts'+businesses.length+'"></p><button onclick="openQuarry('+businesses.length+')">Open Open-Pit Mine : $3000</button><br><button onclick="buildMineshaft('+businesses.length+')">Build Mineshaft : x500 Wood, x100 Stone, x200 Steel</button><br><button onclick="manageEmployees('+businesses.length+',`Mine`)">Manage Employees</button></div>'
+            document.getElementById('Businesses').innerHTML += '<div class="businessbox" id="business'+businesses.length+'"><h3>'+name+'</h3><p id="quarries'+businesses.length+'"></p><p id="shafts'+businesses.length+'"></p><button onclick="openQuarry('+businesses.length+')">Open Open-Pit Mine : $3000</button><br><button onclick="buildMineshaft('+businesses.length+')">Build Mineshaft : x500 Wood, x100 Stone, x100 Steel</button><br><button onclick="manageEmployees('+businesses.length+',`Mine`)">Manage Employees</button></div>'
             businesses.push({name:name,type:'Mine',quarries:[],shafts:[]})
             break
           case 'Oil':
