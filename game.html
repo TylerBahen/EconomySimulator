@@ -262,11 +262,9 @@
       function tickSlow(){
         ASSes.forEach((rule) => {
           if(inventory[rule.material]>=rule.hold){
-            console.log('Sold ASS!')
             socket.emit('sellitem',{type:rule.material,quantity:rule.quantity,price:rule.price,ownername:company.name,ownerid:company.id})
             inventory[rule.material] = inventory[rule.material]-rule.quantity
           }
-          console.log('Checked ASS:'+JSON.stringify(rule))
         })
         setTimeout(tickSlow,10000)
       }
@@ -1087,7 +1085,7 @@
         var ASSbox = '<h3>Automatic Selling System</h3><b>Rules:</b><br>'
         var i = 0
         ASSes.forEach((rule) => {
-          ASSbox+=`Once I have ${rule.hold} ${rule.material}, sell ${rule.quantity} of it for $${rule.price}.<br>`
+          ASSbox+=`Once I have ${rule.hold} ${rule.material}, sell ${rule.quantity} of it for $${rule.price}. <button class="redButton" onclick="deleteASS(${i})">Delete Rule</button><br>`
           i++
         })
         ASSbox +='<button onclick="newASS()">New Rule</button>'
@@ -1103,6 +1101,11 @@
         if (inventory[material]>=0 && quantity>0 && hold>=quantity && price>=0){
           ASSes.push({'material':material,'quantity':quantity,'price':price,'hold':hold})
         }
+        showASS()
+      }
+
+      function deleteASS(index){
+        ASSes.pop(index)
         showASS()
       }
       
