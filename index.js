@@ -1,5 +1,6 @@
 var version = 'Alpha'
 
+console.log('Loading Resources...')
 //var tinycolor = require('tinycolor2')
 var CCC = require('color-contrast-checker')
 var ccc = new CCC();
@@ -11,6 +12,7 @@ var io = require('socket.io')(server);
 //const db = new Database()
 const CryptoJS = require("crypto-js");
 const fetch = require('node-fetch');
+console.log('Resources Loaded.')
 
 const encrypt = (text) => {
   return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(text));
@@ -40,7 +42,7 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-var names = [{'first':'John','last':'Doe'}]
+var names
 
 
 function generateEmployee() {
@@ -69,7 +71,17 @@ function generateEmployee() {
           employees.push({name:`${firstName} ${lastName}`,speed:newSpeed,wage:wage,payday:0,xp:{'Lumber':lumXP,'Mine':minXP,'Oil':oilXP,'Refinery':refXP,'Fabrication':fabXP}})
   } catch(error) {
     console.error('Unable to generate name:', error);
+    console.log('Using temporary names...')
+    getTempNames()
   }
+}
+function getTempNames(){
+  names = {'results':[]}
+  var first = ['John','Jane','Tyler','Ethan','Dallin','Jessica','Peter','Joseph','Josh']
+  var last = ['Doe','Smith','Potter','Philips','Hemsworth','John','Lowder']
+  last.forEach(name => {
+    names.results.push({'name':{'first':first[Math.floor(Math.random()*first.length)],'last':name}})
+  })
 }
 
 app.get('/', function(req, res) {
@@ -325,8 +337,10 @@ io.on('connection',function(client){
     console.log('Employee Fired:\n'+JSON.stringify(employee))
   })
 })
-  
+
+console.log('Booting Server...')
 server.listen(3000)
+console.log('Server Listening.')
 shakeEmployees()
 tickMin()
 tickSec()
