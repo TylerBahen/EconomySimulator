@@ -77,8 +77,8 @@ function generateEmployee() {
 }
 function getTempNames(){
   names = {'results':[]}
-  var first = ['John','Jane','Tyler','Ethan','Dallin','Jessica','Peter','Joseph','Josh']
-  var last = ['Doe','Smith','Potter','Philips','Hemsworth','John','Lowder']
+  var first = ['John','Jane','Tyler','Ethan','Dallin','Jessica','Peter','Joseph','Josh','Liam','Noah','Oliver','Theodore','James','Olivia','Emma','Amelia','Charlotte','Mia']
+  var last = ['Doe','Smith','Potter','Philips','Hemsworth','John','Lowder','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Anderson','Taylor','Moore','Lee','Wilson']
   last.forEach(name => {
     names.results.push({'name':{'first':first[Math.floor(Math.random()*first.length)],'last':name}})
   })
